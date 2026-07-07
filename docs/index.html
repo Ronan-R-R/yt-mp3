@@ -3,149 +3,211 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ytmp3 - clean youtube audio</title>
+  <title>ytmp3 - local audio ripper</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #0d0f14; --card: #171a21; --card2: #1d212b; --text: #e8eaed;
-      --muted: #9aa0a6; --accent: #ff3b3b; --accent-hover: #e02f2f;
-      --border: #2a2e37; --glow: rgba(255, 59, 59, 0.35);
+      --bg: oklch(0.17 0.018 75);
+      --surface: oklch(0.215 0.02 75);
+      --surface-2: oklch(0.26 0.022 75);
+      --line: oklch(0.34 0.02 75);
+      --text: oklch(0.96 0.008 85);
+      --muted: oklch(0.70 0.02 80);
+      --accent: oklch(0.83 0.16 82);
+      --accent-press: oklch(0.76 0.16 72);
+      --ink: oklch(0.19 0.03 75);
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background:
-        radial-gradient(900px 500px at 50% -10%, #23130f, transparent),
-        radial-gradient(1200px 700px at 80% 20%, #10151f, transparent),
-        var(--bg);
+      font-family: "Archivo", system-ui, sans-serif;
+      background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
+      line-height: 1.55;
       overflow-x: hidden;
-      padding: 64px 24px 80px;
+      -webkit-font-smoothing: antialiased;
     }
-    .wrap { max-width: 960px; margin: 0 auto; }
+    .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 0 clamp(20px, 5vw, 56px); }
 
-    header { text-align: center; margin-bottom: 56px; }
-    h1 {
-      font-size: clamp(44px, 9vw, 88px); letter-spacing: -3px; font-weight: 800;
-      background: linear-gradient(180deg, #fff, #b9bdc6);
-      -webkit-background-clip: text; background-clip: text; color: transparent;
+    .kicker {
+      font-family: "JetBrains Mono", monospace; font-size: 12px; font-weight: 500;
+      letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent);
     }
-    .tagline { color: var(--muted); font-size: clamp(15px, 2.5vw, 19px); margin-top: 14px; }
 
-    .downloads {
-      display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 36px;
+    /* Header / hero */
+    header { padding: clamp(56px, 9vw, 120px) 0 clamp(48px, 7vw, 88px); }
+    .hero {
+      display: grid; grid-template-columns: 1.15fr 0.85fr; gap: clamp(24px, 4vw, 56px);
+      align-items: center;
     }
+    .wordmark {
+      font-weight: 900; font-size: clamp(72px, 15vw, 168px); line-height: 0.86;
+      letter-spacing: -0.04em; margin: 18px 0 0;
+    }
+    .wordmark em { font-style: normal; color: var(--accent); }
+    .lede {
+      max-width: 34ch; margin-top: 22px; font-size: clamp(16px, 2vw, 19px);
+      color: var(--muted); font-weight: 400;
+    }
+
+    /* Equalizer visual */
+    .rig {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+      padding: 26px; box-shadow: 0 40px 80px -40px oklch(0 0 0 / 0.7);
+    }
+    .rig-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--muted); margin-bottom: 20px;
+    }
+    .rig-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 14px var(--accent); display: inline-block; margin-right: 7px; vertical-align: -1px; }
+    .eq { display: flex; align-items: flex-end; gap: 6px; height: 150px; }
+    .eq i {
+      flex: 1; background: linear-gradient(var(--accent), var(--accent-press));
+      border-radius: 3px 3px 1px 1px; transform-origin: bottom;
+      animation: pulse 1.1s var(--ease) infinite alternate;
+    }
+    @keyframes pulse { from { transform: scaleY(0.14); } to { transform: scaleY(1); } }
+
+    /* Downloads */
+    .downloads { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-top: 40px; }
     .dl {
-      display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
-      padding: 16px 28px; border-radius: 12px; text-decoration: none;
-      background: var(--card); border: 1px solid var(--border); color: var(--text);
-      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+      text-decoration: none; color: var(--text); background: var(--surface);
+      border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px;
+      transition: transform 0.35s var(--ease), border-color 0.35s var(--ease), background 0.35s var(--ease);
     }
-    .dl b { font-size: 16px; font-weight: 600; }
-    .dl span { font-size: 12px; color: var(--muted); }
-    .dl:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 30px -8px var(--glow); }
-    .dl.primary { background: var(--accent); border-color: var(--accent); }
-    .dl.primary span { color: rgba(255, 255, 255, 0.8); }
-    .dl.primary:hover { background: var(--accent-hover); }
+    .dl:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .dl .plat { font-weight: 800; font-size: 19px; letter-spacing: -0.01em; }
+    .dl .spec { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--muted); }
+    .dl.primary { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+    .dl.primary .spec { color: oklch(0.30 0.04 75); }
+    .dl.primary:hover { background: var(--accent-press); border-color: var(--accent-press); }
 
-    h2 { text-align: center; font-size: 22px; font-weight: 600; margin-bottom: 40px; color: #cfd3da; }
+    /* Operation */
+    .op { padding: clamp(64px, 10vw, 128px) 0; border-top: 1px solid var(--line); }
+    .op-title { font-size: clamp(28px, 5vw, 48px); font-weight: 800; letter-spacing: -0.02em; margin: 14px 0 clamp(40px, 6vw, 72px); max-width: 18ch; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(24px, 3vw, 44px); counter-reset: s; }
+    .step { opacity: 0; transform: translateY(24px); transition: opacity 0.7s var(--ease), transform 0.7s var(--ease); }
+    .step.in { opacity: 1; transform: none; }
+    .step .idx {
+      font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--accent);
+      padding-bottom: 16px; margin-bottom: 20px; border-bottom: 1px solid var(--line);
+    }
+    .step h3 { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 10px; }
+    .step p { color: var(--muted); font-size: 15px; }
+    .step code { font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--text); background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
 
-    .scene { perspective: 1400px; }
-    .steps {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
-      transform-style: preserve-3d; transition: transform 0.15s ease-out;
-    }
-    .step {
-      position: relative; background: linear-gradient(160deg, var(--card2), var(--card));
-      border: 1px solid var(--border); border-radius: 18px; padding: 32px 24px 28px;
-      transform-style: preserve-3d;
-      box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.9);
-      animation: float 6s ease-in-out infinite;
-    }
-    .step:nth-child(2) { animation-delay: -2s; }
-    .step:nth-child(3) { animation-delay: -4s; }
-    .num {
-      position: absolute; top: -22px; left: 24px;
-      width: 46px; height: 46px; border-radius: 12px;
-      display: grid; place-items: center; font-weight: 800; font-size: 20px; color: #fff;
-      background: linear-gradient(145deg, var(--accent), #b81f1f);
-      box-shadow: 0 10px 24px -6px var(--glow);
-      transform: translateZ(50px);
-    }
-    .step h3 { font-size: 17px; margin: 10px 0 8px; transform: translateZ(30px); }
-    .step p { font-size: 14px; color: var(--muted); line-height: 1.6; transform: translateZ(18px); }
-    .step code { background: #0d1017; padding: 2px 6px; border-radius: 5px; color: var(--text); font-size: 13px; }
+    footer { padding: 40px 0 64px; border-top: 1px solid var(--line); }
+    .footline { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); letter-spacing: 0.02em; }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-12px); }
-    }
-    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 64px; }
-    @media (max-width: 720px) {
+    @media (max-width: 860px) {
+      .hero { grid-template-columns: 1fr; }
+      .rig { order: -1; }
       .steps { grid-template-columns: 1fr; gap: 40px; }
-      .step { animation: none; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .step { animation: none; }
+      .eq i { animation: none; transform: scaleY(0.6); }
+      .step { opacity: 1; transform: none; }
+      html { scroll-behavior: auto; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>ytmp3</h1>
-      <p class="tagline">Save YouTube audio on your own device. No ads, no junk, no server.</p>
-      <div class="downloads">
-        <a class="dl primary" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-windows.exe">
-          <b>Windows</b><span>ytmp3.exe, MP3</span>
-        </a>
-        <a class="dl" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-linux">
-          <b>Linux</b><span>binary, MP3</span>
-        </a>
-        <a class="dl" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-android.apk">
-          <b>Android</b><span>APK, M4A</span>
-        </a>
-      </div>
-    </header>
+  <header>
+    <div class="shell">
+      <div class="hero">
+        <div>
+          <span class="kicker">Local audio ripper // v1.0</span>
+          <h1 class="wordmark">yt<em>mp3</em></h1>
+          <p class="lede">Pull audio straight off YouTube on your own machine. No upload sites, no ad walls, no server deciding what you can keep.</p>
 
-    <h2>Three steps</h2>
-    <div class="scene">
-      <div class="steps" id="steps">
-        <div class="step">
-          <div class="num">1</div>
-          <h3>Open the app</h3>
-          <p>Download it for your device and open it. On Windows, if it warns about an unknown publisher, click <code>More info</code> then <code>Run anyway</code>.</p>
+          <div class="downloads">
+            <a class="dl primary" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-windows.exe">
+              <span class="plat">Windows</span><span class="spec">EXE / MP3</span>
+            </a>
+            <a class="dl" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-linux">
+              <span class="plat">Linux</span><span class="spec">BIN / MP3</span>
+            </a>
+            <a class="dl" href="https://github.com/Ronan-R-R/yt-mp3/releases/latest/download/ytmp3-android.apk">
+              <span class="plat">Android</span><span class="spec">APK / M4A</span>
+            </a>
+          </div>
         </div>
-        <div class="step">
-          <div class="num">2</div>
-          <h3>Paste a link</h3>
-          <p>Copy a YouTube video URL and paste it into the box. Pick where you want the file saved.</p>
-        </div>
-        <div class="step">
-          <div class="num">3</div>
-          <h3>Hit download</h3>
-          <p>The audio downloads and lands in your folder. That's it, the file is yours to keep.</p>
+
+        <div class="rig" aria-hidden="true">
+          <div class="rig-head mono">
+            <span><span class="rig-dot"></span>OUTPUT</span>
+            <span>192 kbps</span>
+          </div>
+          <div class="eq" id="eq"></div>
         </div>
       </div>
     </div>
-  </div>
+  </header>
 
-  <footer>Audio you have the rights to only. Respect creators.</footer>
+  <section class="op">
+    <div class="shell">
+      <span class="kicker">Operation</span>
+      <h2 class="op-title">Three moves and the file is yours.</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="idx">01 / OPEN</div>
+          <h3>Run the app</h3>
+          <p>Download for your device and open it. On Windows, if it flags an unknown publisher, hit <code>More info</code> then <code>Run anyway</code>.</p>
+        </div>
+        <div class="step">
+          <div class="idx">02 / PASTE</div>
+          <h3>Drop a link</h3>
+          <p>Copy a YouTube URL, paste it in the box, and choose where the file should land.</p>
+        </div>
+        <div class="step">
+          <div class="idx">03 / RIP</div>
+          <h3>Hit download</h3>
+          <p>The audio pulls down and saves to your folder. Done. It plays anywhere, offline, forever.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="shell">
+      <p class="footline">Audio you have the rights to only. Respect the people who made it.</p>
+    </div>
+  </footer>
 
   <script>
     (function () {
-      var scene = document.querySelector(".scene");
-      var steps = document.getElementById("steps");
-      if (!scene || !steps || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      scene.addEventListener("mousemove", function (e) {
-        var r = scene.getBoundingClientRect();
-        var x = (e.clientX - r.left) / r.width - 0.5;
-        var y = (e.clientY - r.top) / r.height - 0.5;
-        steps.style.transform = "rotateY(" + x * 10 + "deg) rotateX(" + -y * 10 + "deg)";
-      });
-      scene.addEventListener("mouseleave", function () {
-        steps.style.transform = "rotateY(0deg) rotateX(0deg)";
-      });
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      var eq = document.getElementById("eq");
+      if (eq) {
+        var heights = [0.5, 0.8, 0.35, 1, 0.6, 0.9, 0.45, 0.75, 0.55, 0.95, 0.4, 0.7];
+        heights.forEach(function (h, i) {
+          var bar = document.createElement("i");
+          bar.style.animationDuration = (0.8 + h * 0.7).toFixed(2) + "s";
+          bar.style.animationDelay = (-i * 0.12).toFixed(2) + "s";
+          eq.appendChild(bar);
+        });
+      }
+
+      if (reduce || !("IntersectionObserver" in window)) {
+        document.querySelectorAll(".step").forEach(function (s) { s.classList.add("in"); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e, i) {
+          if (e.isIntersecting) {
+            setTimeout(function () { e.target.classList.add("in"); }, i * 120);
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.3 });
+      document.querySelectorAll(".step").forEach(function (s) { io.observe(s); });
     })();
   </script>
 </body>
