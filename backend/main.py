@@ -105,7 +105,7 @@ def download(request: Request, body: DownloadRequest, background: BackgroundTask
     except yt_dlp.utils.DownloadError as exc:
         # Log detail server-side; give the user a clean message.
         print(f"yt-dlp failed for {body.url}: {exc}")
-        raise HTTPException(status_code=422, detail=f"Could not fetch this video. [{str(exc)[-300:]}]") from exc
+        raise HTTPException(status_code=422, detail="Could not fetch this video.") from exc
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001 - surface as generic 500, log the real cause
