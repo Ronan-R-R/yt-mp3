@@ -1,45 +1,39 @@
 # ytmp3
 
-Static frontend (GitHub Pages) + yt-dlp backend (Render). Paste a YouTube link, get an MP3.
+A small Windows desktop app that saves YouTube audio as MP3. It runs entirely on
+your machine with yt-dlp and a bundled ffmpeg, so there's no server to get blocked
+and nothing to install beyond the app itself.
 
-GitHub Pages is static only, so the actual download and conversion run on a small backend. The frontend just calls it.
+An earlier hosted version was scrapped: YouTube blocks downloads from datacenter
+IPs, so a cloud backend can't reliably fetch anything. Running locally from a normal
+home connection avoids that.
 
-## Layout
+## Use it
 
-- `docs/` - static site served by GitHub Pages
-- `backend/` - FastAPI + yt-dlp, containerised with ffmpeg for Render
+Grab `ytmp3.exe` from the [latest release](https://github.com/Ronan-R-R/yt-mp3/releases/latest),
+open it, paste a link, pick a folder, hit Download.
 
-## Deploy the backend (Render, free)
-
-1. Push this repo to GitHub (see below).
-2. On https://render.com create a new **Web Service** from the repo.
-3. Render reads `backend/render.yaml`. Runtime is Docker, plan free.
-4. Set the env var `FRONTEND_ORIGIN` to your Pages URL, e.g. `https://ronanr2003.github.io`.
-5. Deploy. Note the service URL, e.g. `https://yt-mp3-api.onrender.com`.
-
-Free instances sleep after inactivity; the first request after idle takes ~30s to wake.
-
-## Deploy the frontend (GitHub Pages)
-
-1. Repo **Settings > Pages**: Source = **GitHub Actions** (one-time).
-2. Edit `docs/config.js` and set `window.BACKEND_URL` to your Render URL.
-3. Commit and push. The `Deploy Pages` workflow (`.github/workflows/pages.yml`) builds and publishes `docs/` automatically on every push that touches it.
-4. Site goes live at `https://<user>.github.io/<repo>/`.
-
-## Run locally
-
-Backend needs Python 3.12+ and ffmpeg on PATH.
+## Run from source
 
 ```
-cd backend
-python -m venv .venv && .venv/Scripts/activate
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn main:app --reload
+python app.py
 ```
 
-Then open `docs/index.html` with `BACKEND_URL` pointing at `http://localhost:8000`.
+## Build the exe
+
+```
+pip install pyinstaller
+python build.py
+```
+
+Output is `dist/ytmp3.exe`, a single file with Python, yt-dlp and ffmpeg bundled in.
+Upload it to a GitHub release so the download page (`docs/`, served via GitHub Pages)
+links to it.
 
 ## Notes
 
-- Only download audio you have the rights to. This violates YouTube's ToS otherwise.
-- Backend validates the URL, caps duration (`MAX_DURATION_SECONDS`), rate-limits to 10/min per IP, and locks CORS to `FRONTEND_ORIGIN`.
+- Only download audio you have the rights to. This breaks YouTube's ToS otherwise.
+- `docs/` is a static download page deployed by `.github/workflows/pages.yml`.

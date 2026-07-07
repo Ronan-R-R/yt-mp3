@@ -2,6 +2,10 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.buildvenv/
+build/
+dist/
+*.spec
 .env
 *.mp3
 .DS_Store
