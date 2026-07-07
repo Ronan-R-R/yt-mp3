@@ -43,6 +43,8 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
+    # Android/buildozer builds are brittle; never let it block the desktop release.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Build APK
