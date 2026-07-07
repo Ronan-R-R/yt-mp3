@@ -3,6 +3,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  schedule:
+    # Weekly rebuild so the bundled yt-dlp stays current with YouTube changes.
+    - cron: "0 6 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -64,12 +67,21 @@ jobs:
   release:
     needs: [windows, linux, android]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
           merge-multiple: true
+      - id: meta
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=build-$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+          fi
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ytmp3 ${{ steps.meta.outputs.tag }}
           files: artifacts/*
+          make_latest: true
