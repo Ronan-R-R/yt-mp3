@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: yt-mp3-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: MAX_DURATION_SECONDS
+        value: "3600"
