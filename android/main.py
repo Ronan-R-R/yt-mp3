@@ -9,12 +9,14 @@ import threading
 
 from kivy.app import App
 from kivy.clock import mainthread
+from kivy.core.window import Window
+from kivy.graphics import Color, RoundedRectangle
 from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.label import Label
-from kivy.uix.progressbar import ProgressBar
 from kivy.uix.textinput import TextInput
+from kivy.uix.widget import Widget
 
 import yt_dlp
 
@@ -26,6 +28,15 @@ try:
 except ImportError:
     ANDROID = False
 
+# Warm near-black control-panel palette with an amber accent (matches the web page).
+BG = (0.106, 0.098, 0.082, 1)
+SURFACE = (0.145, 0.133, 0.106, 1)
+LINE = (0.275, 0.247, 0.204, 1)
+TEXT = (0.953, 0.937, 0.910, 1)
+MUTED = (0.643, 0.604, 0.545, 1)
+ACCENT = (0.949, 0.698, 0.227, 1)
+INK = (0.106, 0.090, 0.063, 1)
+
 
 def output_dir() -> str:
     if ANDROID:
@@ -35,18 +46,64 @@ def output_dir() -> str:
     return os.path.join(os.path.expanduser("~"), "Downloads")
 
 
+class Bar(Widget):
+    """Custom amber progress bar; Kivy's default one can't be recoloured cleanly."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._value = 0.0
+        with self.canvas:
+            Color(*SURFACE)
+            self._trough = RoundedRectangle(radius=[dp(4)])
+            Color(*ACCENT)
+            self._fill = RoundedRectangle(radius=[dp(4)])
+        self.bind(pos=self._redraw, size=self._redraw)
+
+    @property
+    def value(self) -> float:
+        return self._value
+
+    @value.setter
+    def value(self, v: float) -> None:
+        self._value = max(0.0, min(100.0, v))
+        self._redraw()
+
+    def _redraw(self, *_args) -> None:
+        self._trough.pos = self.pos
+        self._trough.size = self.size
+        self._fill.pos = self.pos
+        self._fill.size = (self.width * self._value / 100.0, self.height)
+
+
 class YtMp3App(App):
     def build(self):
         self.title = "ytmp3"
-        root = BoxLayout(orientation="vertical", padding=dp(20), spacing=dp(14))
+        Window.clearcolor = BG
 
-        root.add_widget(Label(text="ytmp3", font_size="28sp", size_hint_y=None, height=dp(48), bold=True))
+        root = BoxLayout(orientation="vertical", padding=dp(28), spacing=dp(16))
+
         root.add_widget(
             Label(
-                text="Paste a YouTube link to save the audio.",
-                font_size="14sp",
+                text="LOCAL AUDIO RIPPER",
+                font_size="12sp",
+                color=ACCENT,
+                halign="left",
                 size_hint_y=None,
-                height=dp(24),
+                height=dp(20),
+                text_size=(Window.width - dp(56), None),
+            )
+        )
+        root.add_widget(
+            Label(
+                text="yt[color=f2b23a]mp3[/color]",
+                markup=True,
+                font_size="44sp",
+                bold=True,
+                color=TEXT,
+                halign="left",
+                size_hint_y=None,
+                height=dp(60),
+                text_size=(Window.width - dp(56), None),
             )
         )
 
@@ -54,19 +111,43 @@ class YtMp3App(App):
             hint_text="https://youtube.com/watch?v=...",
             multiline=False,
             size_hint_y=None,
-            height=dp(48),
+            height=dp(52),
             font_size="16sp",
+            padding=[dp(14), dp(15)],
+            background_normal="",
+            background_active="",
+            background_color=SURFACE,
+            foreground_color=TEXT,
+            hint_text_color=MUTED,
+            cursor_color=ACCENT,
         )
         root.add_widget(self.url_input)
 
-        self.button = Button(text="Download", size_hint_y=None, height=dp(52), font_size="18sp")
+        self.button = Button(
+            text="Rip audio",
+            size_hint_y=None,
+            height=dp(56),
+            font_size="18sp",
+            bold=True,
+            background_normal="",
+            background_down="",
+            background_color=ACCENT,
+            color=INK,
+        )
         self.button.bind(on_release=self.on_download)
         root.add_widget(self.button)
 
-        self.progress = ProgressBar(max=100, value=0, size_hint_y=None, height=dp(20))
+        self.progress = Bar(size_hint_y=None, height=dp(10))
         root.add_widget(self.progress)
 
-        self.status = Label(text="", font_size="13sp")
+        self.status = Label(
+            text="Paste a YouTube link and hit rip.",
+            font_size="13sp",
+            color=MUTED,
+            halign="left",
+            valign="top",
+            text_size=(Window.width - dp(56), None),
+        )
         root.add_widget(self.status)
 
         return root

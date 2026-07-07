@@ -5,7 +5,10 @@ venv/
 .buildvenv/
 build/
 dist/
-*.spec
+/ytmp3.spec
+android/.buildozer/
+android/bin/
+*.apk
 .env
 *.mp3
 .DS_Store

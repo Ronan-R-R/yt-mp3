@@ -18,6 +18,19 @@ APP_TITLE = "ytmp3"
 QUALITIES = ["320", "256", "192", "128"]
 YT_PREFIXES = ("http://", "https://")
 
+# Warm near-black control-panel palette with an amber accent (matches the web page).
+BG = "#1b1915"
+SURFACE = "#25221b"
+SURFACE2 = "#312c23"
+LINE = "#463f34"
+TEXT = "#f3efe8"
+MUTED = "#a49a8b"
+ACCENT = "#f2b23a"
+ACCENT_PRESS = "#d69a29"
+INK = "#1b1710"
+SANS = "Segoe UI"
+MONO = "Consolas"
+
 
 def default_output_dir() -> str:
     music = Path.home() / "Music"
@@ -32,60 +45,116 @@ class App:
         self.worker: threading.Thread | None = None
 
         root.title(APP_TITLE)
-        root.geometry("560x300")
-        root.minsize(480, 300)
-        root.configure(padx=20, pady=20)
+        root.geometry("600x380")
+        root.minsize(520, 360)
+        root.configure(bg=BG, padx=32, pady=28)
 
         self.url_var = StringVar()
         self.dir_var = StringVar(value=default_output_dir())
         self.quality_var = StringVar(value="192")
-        self.status_var = StringVar(value="Paste a YouTube link and hit Download.")
+        self.status_var = StringVar(value="Paste a YouTube link and hit rip.")
 
+        self._style()
         self._build_ui()
         self.root.after(100, self._drain_events)
+
+    def _style(self) -> None:
+        self.root.option_add("*TCombobox*Listbox.background", SURFACE)
+        self.root.option_add("*TCombobox*Listbox.foreground", TEXT)
+        self.root.option_add("*TCombobox*Listbox.selectBackground", ACCENT)
+        self.root.option_add("*TCombobox*Listbox.selectForeground", INK)
+
+        s = ttk.Style()
+        s.theme_use("clam")
+        s.configure(".", background=BG, foreground=TEXT, font=(SANS, 10))
+        s.configure("TFrame", background=BG)
+        s.configure("TLabel", background=BG, foreground=TEXT)
+        s.configure("Kicker.TLabel", background=BG, foreground=ACCENT, font=(MONO, 9))
+        s.configure("Muted.TLabel", background=BG, foreground=MUTED, font=(MONO, 9))
+        s.configure("Word.TLabel", background=BG, foreground=TEXT, font=(SANS, 34, "bold"))
+        s.configure("WordAccent.TLabel", background=BG, foreground=ACCENT, font=(SANS, 34, "bold"))
+
+        s.configure(
+            "TEntry", fieldbackground=SURFACE, foreground=TEXT, insertcolor=ACCENT,
+            bordercolor=LINE, lightcolor=LINE, darkcolor=LINE, borderwidth=1, padding=8,
+        )
+        s.map("TEntry", bordercolor=[("focus", ACCENT)], lightcolor=[("focus", ACCENT)])
+
+        s.configure(
+            "TCombobox", fieldbackground=SURFACE, background=SURFACE2, foreground=TEXT,
+            arrowcolor=TEXT, bordercolor=LINE, lightcolor=LINE, darkcolor=LINE, padding=6,
+        )
+        s.map("TCombobox", fieldbackground=[("readonly", SURFACE)], foreground=[("readonly", TEXT)])
+
+        s.configure(
+            "TButton", background=SURFACE2, foreground=TEXT, bordercolor=LINE,
+            focuscolor=BG, borderwidth=1, padding=(12, 6),
+        )
+        s.map("TButton", background=[("active", LINE)])
+
+        s.configure(
+            "Accent.TButton", background=ACCENT, foreground=INK, focuscolor=ACCENT,
+            font=(SANS, 12, "bold"), borderwidth=0, padding=(12, 12),
+        )
+        s.map(
+            "Accent.TButton",
+            background=[("active", ACCENT_PRESS), ("disabled", SURFACE2)],
+            foreground=[("disabled", MUTED)],
+        )
+
+        s.configure(
+            "Amber.Horizontal.TProgressbar", troughcolor=SURFACE, background=ACCENT,
+            bordercolor=LINE, lightcolor=ACCENT, darkcolor=ACCENT,
+        )
 
     def _build_ui(self) -> None:
         root = self.root
         root.columnconfigure(0, weight=1)
 
-        title = ttk.Label(root, text="ytmp3", font=("Segoe UI", 20, "bold"))
-        title.grid(row=0, column=0, sticky="w")
-        ttk.Label(root, text="YouTube link to MP3, no ads, no junk.").grid(
-            row=1, column=0, sticky="w", pady=(0, 14)
+        ttk.Label(root, text="LOCAL AUDIO RIPPER // V1", style="Kicker.TLabel").grid(
+            row=0, column=0, sticky="w"
         )
 
-        url_entry = ttk.Entry(root, textvariable=self.url_var, font=("Segoe UI", 11))
-        url_entry.grid(row=2, column=0, sticky="ew", ipady=4)
+        word = ttk.Frame(root)
+        word.grid(row=1, column=0, sticky="w", pady=(2, 18))
+        ttk.Label(word, text="yt", style="Word.TLabel").grid(row=0, column=0)
+        ttk.Label(word, text="mp3", style="WordAccent.TLabel").grid(row=0, column=1)
+
+        url_entry = ttk.Entry(root, textvariable=self.url_var, font=(SANS, 11))
+        url_entry.grid(row=2, column=0, sticky="ew")
         url_entry.focus()
         url_entry.bind("<Return>", lambda _event: self.start())
 
         options = ttk.Frame(root)
-        options.grid(row=3, column=0, sticky="ew", pady=12)
+        options.grid(row=3, column=0, sticky="ew", pady=16)
         options.columnconfigure(1, weight=1)
 
-        ttk.Label(options, text="Save to").grid(row=0, column=0, sticky="w")
-        dir_label = ttk.Label(options, textvariable=self.dir_var, foreground="#555")
-        dir_label.grid(row=0, column=1, sticky="w", padx=8)
+        ttk.Label(options, text="SAVE TO", style="Muted.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(options, textvariable=self.dir_var, style="Muted.TLabel").grid(
+            row=0, column=1, sticky="w", padx=10
+        )
         ttk.Button(options, text="Change", command=self.choose_dir).grid(row=0, column=2)
 
-        ttk.Label(options, text="Quality (kbps)").grid(row=1, column=0, sticky="w", pady=(10, 0))
-        quality = ttk.Combobox(
-            options,
-            textvariable=self.quality_var,
-            values=QUALITIES,
-            state="readonly",
-            width=8,
+        ttk.Label(options, text="QUALITY", style="Muted.TLabel").grid(
+            row=1, column=0, sticky="w", pady=(12, 0)
         )
-        quality.grid(row=1, column=1, sticky="w", padx=8, pady=(10, 0))
+        quality = ttk.Combobox(
+            options, textvariable=self.quality_var, values=QUALITIES, state="readonly", width=8
+        )
+        quality.grid(row=1, column=1, sticky="w", padx=10, pady=(12, 0))
 
-        self.download_btn = ttk.Button(root, text="Download", command=self.start)
-        self.download_btn.grid(row=4, column=0, sticky="ew", ipady=6, pady=(6, 12))
+        self.download_btn = ttk.Button(
+            root, text="Rip audio", command=self.start, style="Accent.TButton"
+        )
+        self.download_btn.grid(row=4, column=0, sticky="ew", pady=(6, 16))
 
-        self.progress = ttk.Progressbar(root, mode="determinate", maximum=100)
+        self.progress = ttk.Progressbar(
+            root, mode="determinate", maximum=100, style="Amber.Horizontal.TProgressbar"
+        )
         self.progress.grid(row=5, column=0, sticky="ew")
 
-        ttk.Label(root, textvariable=self.status_var, foreground="#333").grid(
-            row=6, column=0, sticky="w", pady=(10, 0)
+        ttk.Label(root, textvariable=self.status_var, style="Muted.TLabel").grid(
+            row=6, column=0, sticky="w", pady=(12, 0)
         )
 
     def choose_dir(self) -> None:
@@ -119,7 +188,7 @@ class App:
     def _set_running(self, running: bool) -> None:
         self.download_btn.configure(
             state="disabled" if running else "normal",
-            text="Working..." if running else "Download",
+            text="Working..." if running else "Rip audio",
         )
 
     def _progress_hook(self, data: dict) -> None:
