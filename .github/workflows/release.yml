@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python build.py
+      - run: Rename-Item dist/ytmp3.exe ytmp3-windows.exe
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ytmp3-windows
+          path: dist/ytmp3-windows.exe
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: sudo apt-get update && sudo apt-get install -y python3-tk
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python build.py
+      - run: mv dist/ytmp3 dist/ytmp3-linux
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ytmp3-linux
+          path: dist/ytmp3-linux
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build APK
+        uses: ArtemSBulgakov/buildozer-action@v1
+        with:
+          workdir: android
+          command: buildozer android debug
+      - name: Rename APK
+        run: |
+          apk=$(find android/bin -name "*.apk" | head -1)
+          cp "$apk" ytmp3-android.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ytmp3-android
+          path: ytmp3-android.apk
+
+  release:
+    needs: [windows, linux, android]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
