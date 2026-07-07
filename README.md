@@ -21,9 +21,9 @@ Free instances sleep after inactivity; the first request after idle takes ~30s t
 
 ## Deploy the frontend (GitHub Pages)
 
-1. Edit `docs/config.js` and set `window.BACKEND_URL` to your Render URL.
-2. Commit and push.
-3. Repo **Settings > Pages**: Source = Deploy from a branch, Branch = `main`, Folder = `/docs`.
+1. Repo **Settings > Pages**: Source = **GitHub Actions** (one-time).
+2. Edit `docs/config.js` and set `window.BACKEND_URL` to your Render URL.
+3. Commit and push. The `Deploy Pages` workflow (`.github/workflows/pages.yml`) builds and publishes `docs/` automatically on every push that touches it.
 4. Site goes live at `https://<user>.github.io/<repo>/`.
 
 ## Run locally
